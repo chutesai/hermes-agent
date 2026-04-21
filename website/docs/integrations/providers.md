@@ -263,8 +263,8 @@ model:
 
 `CHUTES_API_KEY` is the primary auth path for the built-in provider. Hermes uses `https://llm.chutes.ai/v1` as the default base URL and `chat_completions` as the transport.
 
-:::tip Live model metadata
-Chutes model inventory changes frequently. When current model availability, pricing, TEE status, or supported features matter, use the live models endpoint at `https://llm.chutes.ai/v1/models` as the source of truth.
+:::tip Live model metadata is the source of truth
+`https://llm.chutes.ai/v1/models` is authoritative for Chutes model inventory, context lengths, and other per-model metadata — Hermes queries it live for both model discovery (in the CLI selector) and context-length resolution. The `default`, `default:latency`, and `default:throughput` entries are routing conveniences, not a static catalog. Hermes does **not** rely on `models.dev` for Chutes.
 :::
 
 ### First-Class Chinese AI Providers
