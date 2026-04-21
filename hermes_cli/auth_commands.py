@@ -75,13 +75,21 @@ def _resolve_custom_provider_input(raw: str) -> str | None:
 
 def _normalize_provider(provider: str) -> str:
     normalized = (provider or "").strip().lower()
+    # Empty input must pass through empty so callers (e.g. auth_list_command)
+    # can treat "no filter" differently from "filter == openrouter".
+    if not normalized:
+        return ""
     if normalized in {"or", "open-router"}:
         return "openrouter"
     # Check if it matches a custom provider name
     custom_key = _resolve_custom_provider_input(normalized)
     if custom_key:
         return custom_key
-    return normalized
+    # Apply the shared alias table so documented aliases (e.g. "chutes-ai",
+    # "glm", "github-copilot") resolve the same way here as in the rest of
+    # the CLI — avoids auth commands rejecting aliases other surfaces accept.
+    from hermes_cli.models import _PROVIDER_ALIASES
+    return _PROVIDER_ALIASES.get(normalized, normalized)
 
 
 def _provider_base_url(provider: str) -> str:
