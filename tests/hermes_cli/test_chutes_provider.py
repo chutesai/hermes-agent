@@ -2,6 +2,7 @@
 
 import sys
 import types
+from unittest.mock import patch
 
 import pytest
 
@@ -17,7 +18,14 @@ from hermes_cli.auth import (
     get_api_key_provider_status,
     resolve_api_key_provider_credentials,
 )
-from hermes_cli.models import CANONICAL_PROVIDERS, _PROVIDER_MODELS, _PROVIDER_LABELS, _PROVIDER_ALIASES, normalize_provider
+from hermes_cli.models import (
+    CANONICAL_PROVIDERS,
+    _PROVIDER_MODELS,
+    _PROVIDER_LABELS,
+    _PROVIDER_ALIASES,
+    normalize_provider,
+    provider_model_ids,
+)
 
 
 class TestChutesProviderRegistry:
@@ -110,3 +118,77 @@ class TestChutesMetadataHints:
     def test_base_url_hints_include_chutes(self):
         from agent.model_metadata import _URL_TO_PROVIDER
         assert _URL_TO_PROVIDER["llm.chutes.ai"] == "chutes"
+
+
+class TestChutesLiveModelDiscovery:
+    def test_live_fetch_returns_chutes_models_with_routing_aliases(self, monkeypatch):
+        monkeypatch.setenv("CHUTES_API_KEY", "cpk_test")
+        live_ids = ["zai-org/GLM-5-TEE", "deepseek-ai/DeepSeek-V3.2", "moonshotai/Kimi-K2-Thinking"]
+        with patch("hermes_cli.models.fetch_api_models", return_value=live_ids):
+            result = provider_model_ids("chutes")
+        assert result[: len(live_ids)] == live_ids
+        # Routing aliases are appended as conveniences
+        for alias in ("default", "default:latency", "default:throughput"):
+            assert alias in result
+
+    def test_live_fetch_failure_falls_back_to_static_aliases(self, monkeypatch):
+        monkeypatch.setenv("CHUTES_API_KEY", "cpk_test")
+        with patch("hermes_cli.models.fetch_api_models", return_value=None):
+            result = provider_model_ids("chutes")
+        assert result == ["default", "default:latency", "default:throughput"]
+
+    def test_live_fetch_dedupes_routing_aliases_already_in_payload(self, monkeypatch):
+        monkeypatch.setenv("CHUTES_API_KEY", "cpk_test")
+        live_ids = ["default", "zai-org/GLM-5-TEE", "default:latency"]
+        with patch("hermes_cli.models.fetch_api_models", return_value=live_ids):
+            result = provider_model_ids("chutes")
+        # No duplicates
+        assert len(result) == len(set(result))
+        # Live entries preserved in their original order
+        assert result.index("default") < result.index("zai-org/GLM-5-TEE")
+        assert "default:throughput" in result
+
+    def test_chutes_ai_alias_reaches_live_fetch(self, monkeypatch):
+        monkeypatch.setenv("CHUTES_API_KEY", "cpk_test")
+        live_ids = ["zai-org/GLM-5-TEE"]
+        with patch("hermes_cli.models.fetch_api_models", return_value=live_ids):
+            result = provider_model_ids("chutes-ai")
+        assert "zai-org/GLM-5-TEE" in result
+
+    def test_fetch_chutes_models_uses_env_api_key(self, monkeypatch):
+        from hermes_cli.models import fetch_chutes_models, CHUTES_BASE_URL
+
+        monkeypatch.setenv("CHUTES_API_KEY", "cpk_env_value")
+        captured: dict = {}
+
+        def _spy(api_key, base_url, timeout=5.0):
+            captured["api_key"] = api_key
+            captured["base_url"] = base_url
+            return ["zai-org/GLM-5-TEE"]
+
+        with patch("hermes_cli.models.fetch_api_models", side_effect=_spy):
+            result = fetch_chutes_models()
+        assert result is not None
+        assert captured["api_key"] == "cpk_env_value"
+        assert captured["base_url"] == CHUTES_BASE_URL
+
+
+class TestChutesAuthCommandsAlias:
+    def test_auth_commands_normalizes_chutes_ai(self):
+        from hermes_cli.auth_commands import _normalize_provider
+        assert _normalize_provider("chutes-ai") == "chutes"
+
+    def test_auth_commands_passes_chutes_through(self):
+        from hermes_cli.auth_commands import _normalize_provider
+        assert _normalize_provider("chutes") == "chutes"
+
+    def test_auth_commands_preserves_empty_string(self):
+        """Empty filter must stay empty so auth list shows all providers."""
+        from hermes_cli.auth_commands import _normalize_provider
+        assert _normalize_provider("") == ""
+        assert _normalize_provider(None) == ""  # type: ignore[arg-type]
+
+    def test_auth_commands_preserves_openrouter_shortcuts(self):
+        from hermes_cli.auth_commands import _normalize_provider
+        assert _normalize_provider("or") == "openrouter"
+        assert _normalize_provider("open-router") == "openrouter"

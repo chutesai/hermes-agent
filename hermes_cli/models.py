@@ -1518,6 +1518,10 @@ def provider_model_ids(provider: Optional[str], *, force_refresh: bool = False) 
         live = fetch_ollama_cloud_models(force_refresh=force_refresh)
         if live:
             return live
+    if normalized == "chutes":
+        live = fetch_chutes_models()
+        if live:
+            return live
     if normalized == "custom":
         base_url = _get_custom_base_url()
         if base_url:
@@ -2041,6 +2045,59 @@ def fetch_api_models(
     be reached (network error, timeout, auth failure, etc.).
     """
     return probe_api_models(api_key, base_url, timeout=timeout).get("models")
+
+
+# ---------------------------------------------------------------------------
+# Chutes — live model catalog
+# ---------------------------------------------------------------------------
+
+CHUTES_BASE_URL = "https://llm.chutes.ai/v1"
+# Router convenience aliases: Chutes' /models payload lists concrete model IDs,
+# but "default" / "default:latency" / "default:throughput" are server-side
+# routing shortcuts that Hermes exposes so users don't have to know specific
+# model names. They are appended after live results for discoverability.
+_CHUTES_ROUTING_ALIASES: tuple[str, ...] = (
+    "default",
+    "default:latency",
+    "default:throughput",
+)
+
+
+def fetch_chutes_models(
+    api_key: Optional[str] = None,
+    base_url: Optional[str] = None,
+    timeout: float = 5.0,
+) -> Optional[list[str]]:
+    """Fetch the live Chutes catalog from ``https://llm.chutes.ai/v1/models``.
+
+    The live Chutes endpoint is the source of truth for Chutes model inventory
+    (models.dev does not track Chutes). Returns live IDs plus routing aliases
+    on success, or ``None`` when the endpoint is unreachable (callers should
+    fall back to the static routing-alias trio).
+    """
+    if not api_key:
+        api_key = os.getenv("CHUTES_API_KEY", "").strip()
+    if not base_url:
+        # Chutes is locked to the canonical live endpoint — the authoritative
+        # source of inventory/metadata. No CHUTES_BASE_URL override: users who
+        # want a different endpoint can wire it via custom_providers in config.
+        base_url = CHUTES_BASE_URL
+
+    live = fetch_api_models(api_key, base_url, timeout=timeout)
+    if not live:
+        return None
+
+    seen: set[str] = set()
+    merged: list[str] = []
+    for model_id in live:
+        if model_id and model_id not in seen:
+            seen.add(model_id)
+            merged.append(model_id)
+    for alias in _CHUTES_ROUTING_ALIASES:
+        if alias not in seen:
+            seen.add(alias)
+            merged.append(alias)
+    return merged
 
 
 # ---------------------------------------------------------------------------
