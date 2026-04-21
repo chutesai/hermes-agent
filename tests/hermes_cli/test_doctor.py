@@ -44,6 +44,21 @@ class TestProviderEnvDetection:
         content = "KIMI_CN_API_KEY=sk-test\n"
         assert _has_provider_env_config(content)
 
+    def test_detects_chutes_api_key(self):
+        content = "CHUTES_API_KEY=cpk_test\n"
+        assert _has_provider_env_config(content)
+
+    def test_chutes_in_apikey_provider_checks(self):
+        """Chutes must appear in the API-key provider probe table with the canonical endpoint."""
+        apikey_providers = doctor._apikey_provider_checks()
+        chutes_entries = [row for row in apikey_providers if row[0] == "Chutes"]
+        assert len(chutes_entries) == 1
+        _name, env_vars, default_url, base_env, _supports = chutes_entries[0]
+        assert env_vars == ("CHUTES_API_KEY",)
+        assert default_url == "https://llm.chutes.ai/v1/models"
+        # No base_url override — Chutes is locked to the canonical endpoint.
+        assert base_env is None
+
     def test_returns_false_when_no_provider_settings(self):
         content = "TERMINAL_ENV=local\n"
         assert not _has_provider_env_config(content)
