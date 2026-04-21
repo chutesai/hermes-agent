@@ -302,6 +302,20 @@ class TestGetModelContextLength:
 
         assert result == CONTEXT_PROBE_TIERS[0]
 
+    def test_provider_prefers_live_endpoint_metadata_helper(self):
+        """Chutes is flagged as a live-endpoint-authoritative provider.
+
+        Other known providers (OpenAI, Anthropic, OpenRouter) are not, so
+        they continue to use models.dev / fuzzy defaults as before.
+        """
+        from agent.model_metadata import _provider_prefers_live_endpoint_metadata
+        assert _provider_prefers_live_endpoint_metadata("https://llm.chutes.ai/v1")
+        assert _provider_prefers_live_endpoint_metadata("https://llm.chutes.ai/v1/")
+        assert not _provider_prefers_live_endpoint_metadata("https://api.openai.com/v1")
+        assert not _provider_prefers_live_endpoint_metadata("https://api.anthropic.com")
+        assert not _provider_prefers_live_endpoint_metadata("https://openrouter.ai/api/v1")
+        assert not _provider_prefers_live_endpoint_metadata("")
+
     @patch("agent.model_metadata.fetch_model_metadata")
     @patch("agent.model_metadata.fetch_endpoint_model_metadata")
     def test_custom_endpoint_single_model_fallback(self, mock_endpoint_fetch, mock_fetch):
