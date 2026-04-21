@@ -1219,9 +1219,17 @@ OPTIONAL_ENV_VARS = {
         "password": True,
         "category": "provider",
     },
+    "CHUTES_API_KEY": {
+        "description": "Chutes API key for the Chutes.ai OpenAI-compatible inference endpoint",
+        "prompt": "Chutes API Key",
+        "url": "https://chutes.ai/app",
+        "password": True,
+        "category": "provider",
+        "advanced": True,
+    },
     "XIAOMI_BASE_URL": {
         "description": "Xiaomi MiMo base URL override (default: https://api.xiaomimimo.com/v1)",
-        "prompt": "Xiaomi base URL (leave empty for default)",
+        "prompt": "Xiaomi MiMo base URL (leave empty for default)",
         "url": None,
         "password": False,
         "category": "provider",

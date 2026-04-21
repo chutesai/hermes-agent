@@ -1585,6 +1585,7 @@ def select_provider_and_model(args=None):
         "arcee",
         "nvidia",
         "ollama-cloud",
+        "chutes",
     ):
         _model_flow_api_key_provider(config, selected_provider, current_model)
 

@@ -249,6 +249,11 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         "mimo-v2-omni",
         "mimo-v2-flash",
     ],
+    "chutes": [
+        "default",
+        "default:latency",
+        "default:throughput",
+    ],
     "arcee": [
         "trinity-large-thinking",
         "trinity-large-preview",
@@ -594,6 +599,7 @@ CANONICAL_PROVIDERS: list[ProviderEntry] = [
     ProviderEntry("opencode-zen",   "OpenCode Zen",             "OpenCode Zen (35+ curated models, pay-as-you-go)"),
     ProviderEntry("opencode-go",    "OpenCode Go",              "OpenCode Go (open models, $10/month subscription)"),
     ProviderEntry("bedrock",        "AWS Bedrock",              "AWS Bedrock (Claude, Nova, Llama, DeepSeek — IAM or API key)"),
+    ProviderEntry("chutes",         "Chutes",                   "Chutes (open-source models, routing, and TEE inference via direct API)"),
 ]
 
 # Derived dicts — used throughout the codebase
@@ -648,6 +654,7 @@ _PROVIDER_ALIASES = {
     "huggingface-hub": "huggingface",
     "mimo": "xiaomi",
     "xiaomi-mimo": "xiaomi",
+    "chutes-ai": "chutes",
     "aws": "bedrock",
     "aws-bedrock": "bedrock",
     "amazon-bedrock": "bedrock",

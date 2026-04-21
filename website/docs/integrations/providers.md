@@ -27,6 +27,7 @@ You need at least one way to connect to an LLM. Use `hermes model` to switch pro
 | **Arcee AI** | `ARCEEAI_API_KEY` in `~/.hermes/.env` (provider: `arcee`; aliases: `arcee-ai`, `arceeai`) |
 | **MiniMax** | `MINIMAX_API_KEY` in `~/.hermes/.env` (provider: `minimax`) |
 | **MiniMax China** | `MINIMAX_CN_API_KEY` in `~/.hermes/.env` (provider: `minimax-cn`) |
+| **Chutes** | `CHUTES_API_KEY` in `~/.hermes/.env` (provider: `chutes`; aliases: `chutes-ai`) |
 | **Alibaba Cloud** | `DASHSCOPE_API_KEY` in `~/.hermes/.env` (provider: `alibaba`, aliases: `dashscope`, `qwen`) |
 | **Kilo Code** | `KILOCODE_API_KEY` in `~/.hermes/.env` (provider: `kilocode`) |
 | **Xiaomi MiMo** | `XIAOMI_API_KEY` in `~/.hermes/.env` (provider: `xiaomi`, aliases: `mimo`, `xiaomi-mimo`) |
@@ -237,6 +238,34 @@ model:
 | `COPILOT_GITHUB_TOKEN` | GitHub token for Copilot API (first priority) |
 | `HERMES_COPILOT_ACP_COMMAND` | Override the Copilot CLI binary path (default: `copilot`) |
 | `HERMES_COPILOT_ACP_ARGS` | Override ACP args (default: `--acp --stdio`) |
+
+### Chutes
+
+Chutes is a direct OpenAI-compatible provider for open-source models, model routing, and TEE-backed confidential inference.
+
+```bash
+hermes chat --provider chutes --model default
+# Requires: CHUTES_API_KEY in ~/.hermes/.env
+
+# Lower-latency routing alias
+hermes chat --provider chutes --model default:latency
+
+# Throughput-optimized routing alias
+hermes chat --provider chutes --model default:throughput
+```
+
+Or set it permanently in `config.yaml`:
+```yaml
+model:
+  provider: "chutes"
+  default: "default"
+```
+
+`CHUTES_API_KEY` is the primary auth path for the built-in provider. Hermes uses `https://llm.chutes.ai/v1` as the default base URL and `chat_completions` as the transport.
+
+:::tip Live model metadata
+Chutes model inventory changes frequently. When current model availability, pricing, TEE status, or supported features matter, use the live models endpoint at `https://llm.chutes.ai/v1/models` as the source of truth.
+:::
 
 ### First-Class Chinese AI Providers
 
